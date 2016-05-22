@@ -1,3 +1,6 @@
+// Copyright (c) 2016 Melvin Eloy Irizarry-Gelpí
+// Licenced under the MIT License.
+
 package eisen
 
 import (
@@ -8,31 +11,31 @@ import (
 
 // A Stein represents an arbitrary-precision Eisenstein integer.
 type Stein struct {
-	l, r *big.Int
+	l, r big.Int
 }
 
 // L returns the left component of z.
 func (z *Stein) L() *big.Int {
-	return z.l
+	return &z.l
 }
 
 // R returns the right component of z.
 func (z *Stein) R() *big.Int {
-	return z.r
+	return &z.r
 }
 
 // SetL sets the left component of z equal to a.
 func (z *Stein) SetL(a *big.Int) {
-	z.l = a
+	z.l = *a
 }
 
 // SetR sets the right component of z equal to b.
 func (z *Stein) SetR(b *big.Int) {
-	z.r = b
+	z.r = *b
 }
 
-// Comp returns the two components of z.
-func (z *Stein) Comp() (a, b *big.Int) {
+// Components returns the two components of z.
+func (z *Stein) Components() (a, b *big.Int) {
 	a = z.L()
 	b = z.R()
 	return
@@ -121,19 +124,20 @@ func (z *Stein) Sub(x, y *Stein) *Stein {
 // 		Mul(ω, ω) + ω + 1 = 0
 // This binary operation is commutative and associative.
 func (z *Stein) Mul(x, y *Stein) *Stein {
-	p := new(Stein).Copy(x)
-	q := new(Stein).Copy(y)
-	z.SetL(new(big.Int).Sub(
-		new(big.Int).Mul(p.L(), q.L()),
-		new(big.Int).Mul(q.R(), p.R()),
+	a, b := x.L(), x.R()
+	c, d := y.L(), y.R()
+	s, t, u, v := new(big.Int), new(big.Int), new(big.Int), new(big.Int)
+	z.SetL(s.Sub(
+		s.Mul(a, c),
+		u.Mul(d, b),
 	))
-	z.SetR(new(big.Int).Add(
-		new(big.Int).Mul(q.R(), p.L()),
-		new(big.Int).Mul(p.R(), q.L()),
+	z.SetR(t.Add(
+		t.Mul(d, a),
+		u.Mul(b, c),
 	))
-	z.SetR(new(big.Int).Sub(
+	z.SetR(v.Sub(
 		z.R(),
-		new(big.Int).Mul(p.R(), q.R()),
+		v.Mul(b, d),
 	))
 	return z
 }
@@ -165,7 +169,10 @@ func (z *Stein) Quo(x, y *Stein) *Stein {
 
 // Associates returns the six associates of z.
 func (z *Stein) Associates() (a, b, c, d, e, f *Stein) {
-	ω := New(big.NewInt(0), big.NewInt(1))
+	ω := New(
+		big.NewInt(0),
+		big.NewInt(1),
+	)
 	a = new(Stein).Copy(z)
 	b = new(Stein).Neg(z)
 	c = new(Stein).Mul(z, ω)
