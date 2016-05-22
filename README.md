@@ -7,6 +7,5 @@ Package `eisen` brings [Eisenstein integer](https://en.wikipedia.org/wiki/Eisens
 ## To Do
 
 1. Improve documentation
-1. Tests
 1. Improve README
 1. Improve memory management

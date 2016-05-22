@@ -6,12 +6,22 @@ package eisen
 import (
 	"fmt"
 	"math/big"
+	"math/rand"
+	"reflect"
 	"strings"
 )
 
 // A Stein represents an arbitrary-precision Eisenstein integer.
 type Stein struct {
 	l, r big.Int
+}
+
+// Omega returns a pointer to the Stein unit ω.
+func Omega() *Stein {
+	return &Stein{
+		*big.NewInt(0),
+		*big.NewInt(1),
+	}
 }
 
 // L returns the left component of z.
@@ -34,8 +44,8 @@ func (z *Stein) SetR(b *big.Int) {
 	z.r = *b
 }
 
-// Components returns the two components of z.
-func (z *Stein) Components() (a, b *big.Int) {
+// Integers returns the two integer components of z.
+func (z *Stein) Integers() (a, b *big.Int) {
 	a = z.L()
 	b = z.R()
 	return
@@ -124,9 +134,11 @@ func (z *Stein) Sub(x, y *Stein) *Stein {
 // 		Mul(ω, ω) + ω + 1 = 0
 // This binary operation is commutative and associative.
 func (z *Stein) Mul(x, y *Stein) *Stein {
-	a, b := x.L(), x.R()
-	c, d := y.L(), y.R()
-	s, t, u, v := new(big.Int), new(big.Int), new(big.Int), new(big.Int)
+	a := new(big.Int).Set(x.L())
+	b := new(big.Int).Set(x.R())
+	c := new(big.Int).Set(y.L())
+	d := new(big.Int).Set(y.R())
+	s, t, u := new(big.Int), new(big.Int), new(big.Int)
 	z.SetL(s.Sub(
 		s.Mul(a, c),
 		u.Mul(d, b),
@@ -135,9 +147,9 @@ func (z *Stein) Mul(x, y *Stein) *Stein {
 		t.Mul(d, a),
 		u.Mul(b, c),
 	))
-	z.SetR(v.Sub(
+	z.SetR(u.Sub(
 		z.R(),
-		v.Mul(b, d),
+		u.Mul(b, d),
 	))
 	return z
 }
@@ -169,18 +181,24 @@ func (z *Stein) Quo(x, y *Stein) *Stein {
 
 // Associates returns the six associates of z.
 func (z *Stein) Associates() (a, b, c, d, e, f *Stein) {
-	ω := New(
-		big.NewInt(0),
-		big.NewInt(1),
-	)
 	a = new(Stein).Copy(z)
 	b = new(Stein).Neg(z)
-	c = new(Stein).Mul(z, ω)
-	ω.Neg(ω)
-	d = new(Stein).Mul(z, ω)
-	ω.Mul(ω, ω)
-	e = new(Stein).Mul(z, ω)
-	ω.Neg(ω)
-	f = new(Stein).Mul(z, ω)
+	unit := Omega()
+	c = new(Stein).Mul(z, unit)
+	unit.Neg(unit)
+	d = new(Stein).Mul(z, unit)
+	unit.Mul(unit, unit)
+	e = new(Stein).Mul(z, unit)
+	unit.Neg(unit)
+	f = new(Stein).Mul(z, unit)
 	return
+}
+
+// Generate a random Stein value for quick.Check.
+func (z *Stein) Generate(rand *rand.Rand, size int) reflect.Value {
+	randomStein := &Stein{
+		*big.NewInt(rand.Int63()),
+		*big.NewInt(rand.Int63()),
+	}
+	return reflect.ValueOf(randomStein)
 }
