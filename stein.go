@@ -16,7 +16,7 @@ type Stein struct {
 	l, r big.Int
 }
 
-// Omega returns a pointer to the Stein unit ω.
+// Omega returns a pointer to the Eisenstein unit ω.
 func Omega() *Stein {
 	return &Stein{
 		*big.NewInt(0),
@@ -24,31 +24,9 @@ func Omega() *Stein {
 	}
 }
 
-// L returns the left component of z.
-func (z *Stein) L() *big.Int {
-	return &z.l
-}
-
-// R returns the right component of z.
-func (z *Stein) R() *big.Int {
-	return &z.r
-}
-
-// SetL sets the left component of z equal to a.
-func (z *Stein) SetL(a *big.Int) {
-	z.l = *a
-}
-
-// SetR sets the right component of z equal to b.
-func (z *Stein) SetR(b *big.Int) {
-	z.r = *b
-}
-
-// Integers returns the two integer components of z.
-func (z *Stein) Integers() (a, b *big.Int) {
-	a = z.L()
-	b = z.R()
-	return
+// Integers returns the pointers to the two integer components of z.
+func (z *Stein) Integers() (*big.Int, *big.Int) {
+	return &z.l, &z.r
 }
 
 // String returns the string version of a Stein value.
@@ -58,11 +36,11 @@ func (z *Stein) Integers() (a, b *big.Int) {
 func (z *Stein) String() string {
 	a := make([]string, 5)
 	a[0] = "("
-	a[1] = fmt.Sprintf("%v", z.L())
-	if z.R().Sign() == -1 {
-		a[2] = fmt.Sprintf("%v", z.R())
+	a[1] = fmt.Sprintf("%v", &z.l)
+	if (&z.r).Sign() == -1 {
+		a[2] = fmt.Sprintf("%v", &z.r)
 	} else {
-		a[2] = fmt.Sprintf("+%v", z.R())
+		a[2] = fmt.Sprintf("+%v", &z.r)
 	}
 	a[3] = "ω"
 	a[4] = ")"
@@ -71,7 +49,7 @@ func (z *Stein) String() string {
 
 // Equals returns true if y and z are equal.
 func (z *Stein) Equals(y *Stein) bool {
-	if z.L().Cmp(y.L()) != 0 || z.R().Cmp(y.R()) != 0 {
+	if (&z.l).Cmp(&y.l) != 0 || (&z.r).Cmp(&y.r) != 0 {
 		return false
 	}
 	return true
@@ -79,8 +57,8 @@ func (z *Stein) Equals(y *Stein) bool {
 
 // Copy copies y onto z, and returns z.
 func (z *Stein) Copy(y *Stein) *Stein {
-	z.SetL(y.L())
-	z.SetR(y.R())
+	(&z.l).Set(&y.l)
+	(&z.r).Set(&y.r)
 	return z
 }
 
@@ -88,43 +66,43 @@ func (z *Stein) Copy(y *Stein) *Stein {
 // big.Int values.
 func New(a, b *big.Int) *Stein {
 	z := new(Stein)
-	z.SetL(a)
-	z.SetR(b)
+	(&z.l).Set(a)
+	(&z.r).Set(b)
 	return z
 }
 
 // Scal sets z equal to y scaled by a, and returns z.
 func (z *Stein) Scal(y *Stein, a *big.Int) *Stein {
-	z.SetL(new(big.Int).Mul(y.L(), a))
-	z.SetR(new(big.Int).Mul(y.R(), a))
+	(&z.l).Mul(&y.l, a)
+	(&z.r).Mul(&y.r, a)
 	return z
 }
 
 // Neg sets z equal to the negative of y, and returns z.
 func (z *Stein) Neg(y *Stein) *Stein {
-	z.SetL(new(big.Int).Neg(y.L()))
-	z.SetR(new(big.Int).Neg(y.R()))
+	(&z.l).Neg(&y.l)
+	(&z.r).Neg(&y.r)
 	return z
 }
 
 // Conj sets z equal to the conjugate of y, and returns z.
 func (z *Stein) Conj(y *Stein) *Stein {
-	z.SetL(new(big.Int).Sub(y.L(), y.R()))
-	z.SetR(new(big.Int).Neg(y.R()))
+	(&z.l).Sub(&y.l, &y.r)
+	(&z.r).Neg(&y.r)
 	return z
 }
 
 // Add sets z equal to the sum of x and y, and returns z.
 func (z *Stein) Add(x, y *Stein) *Stein {
-	z.SetL(new(big.Int).Add(x.L(), y.L()))
-	z.SetR(new(big.Int).Add(x.R(), y.R()))
+	(&z.l).Add(&x.l, &y.l)
+	(&z.r).Add(&x.r, &y.r)
 	return z
 }
 
 // Sub sets z equal to the difference of x and y, and returns z.
 func (z *Stein) Sub(x, y *Stein) *Stein {
-	z.SetL(new(big.Int).Sub(x.L(), y.L()))
-	z.SetR(new(big.Int).Sub(x.R(), y.R()))
+	(&z.l).Sub(&x.l, &y.l)
+	(&z.r).Sub(&x.r, &y.r)
 	return z
 }
 
@@ -134,36 +112,37 @@ func (z *Stein) Sub(x, y *Stein) *Stein {
 // 		Mul(ω, ω) + ω + 1 = 0
 // This binary operation is commutative and associative.
 func (z *Stein) Mul(x, y *Stein) *Stein {
-	a := new(big.Int).Set(x.L())
-	b := new(big.Int).Set(x.R())
-	c := new(big.Int).Set(y.L())
-	d := new(big.Int).Set(y.R())
-	s, t, u := new(big.Int), new(big.Int), new(big.Int)
-	z.SetL(s.Sub(
-		s.Mul(a, c),
-		u.Mul(d, b),
-	))
-	z.SetR(t.Add(
-		t.Mul(d, a),
-		u.Mul(b, c),
-	))
-	z.SetR(u.Sub(
-		z.R(),
-		u.Mul(b, d),
-	))
+	a := new(big.Int).Set(&x.l)
+	b := new(big.Int).Set(&x.r)
+	c := new(big.Int).Set(&y.l)
+	d := new(big.Int).Set(&y.r)
+	temp := new(big.Int)
+	(&z.l).Sub(
+		(&z.l).Mul(a, c),
+		temp.Mul(d, b),
+	)
+	(&z.r).Add(
+		(&z.r).Mul(d, a),
+		temp.Mul(b, c),
+	)
+	(&z.r).Sub(
+		(&z.r),
+		temp.Mul(b, d),
+	)
 	return z
 }
 
-// Quad returns the quadrance of z, a pointer to a big.Int value.
+// Quad returns the non-negative quadrance of z, a pointer to a big.Int value.
 func (z *Stein) Quad() *big.Int {
 	quad := new(big.Int)
+	temp := new(big.Int)
 	quad.Add(
-		quad.Mul(z.L(), z.L()),
-		new(big.Int).Mul(z.R(), z.R()),
+		quad.Mul(&z.l, &z.l),
+		temp.Mul(&z.r, &z.r),
 	)
 	quad.Sub(
 		quad,
-		new(big.Int).Mul(z.L(), z.R()),
+		temp.Mul(&z.l, &z.r),
 	)
 	return quad
 }
@@ -174,27 +153,32 @@ func (z *Stein) Quo(x, y *Stein) *Stein {
 	quad := y.Quad()
 	z.Conj(y)
 	z.Mul(x, z)
-	z.SetL(new(big.Int).Quo(z.L(), quad))
-	z.SetR(new(big.Int).Quo(z.R(), quad))
+	(&z.l).Quo(&z.l, quad)
+	(&z.r).Quo(&z.r, quad)
 	return z
 }
 
 // Associates returns the six associates of z.
 func (z *Stein) Associates() (a, b, c, d, e, f *Stein) {
-	a = new(Stein).Copy(z)
-	b = new(Stein).Neg(z)
+	a.Copy(z)
+	b.Neg(z)
 	unit := Omega()
-	c = new(Stein).Mul(z, unit)
+	c.Mul(z, unit)
 	unit.Neg(unit)
-	d = new(Stein).Mul(z, unit)
+	d.Mul(z, unit)
 	unit.Mul(unit, unit)
-	e = new(Stein).Mul(z, unit)
+	e.Mul(z, unit)
 	unit.Neg(unit)
-	f = new(Stein).Mul(z, unit)
+	f.Mul(z, unit)
 	return
 }
 
-// Generate a random Stein value for quick.Check.
+// IsEisensteinPrime returns true if z is an Eisenstein prime.
+func (z *Stein) IsEisensteinPrime() bool {
+	return false
+}
+
+// Generate a random Stein value for quick.Check testing.
 func (z *Stein) Generate(rand *rand.Rand, size int) reflect.Value {
 	randomStein := &Stein{
 		*big.NewInt(rand.Int63()),
