@@ -49,60 +49,59 @@ func (z *Stein) String() string {
 
 // Equals returns true if y and z are equal.
 func (z *Stein) Equals(y *Stein) bool {
-	if (&z.l).Cmp(&y.l) != 0 || (&z.r).Cmp(&y.r) != 0 {
+	if z.l.Cmp(&y.l) != 0 || z.r.Cmp(&y.r) != 0 {
 		return false
 	}
 	return true
 }
 
-// Copy copies y onto z, and returns z.
-func (z *Stein) Copy(y *Stein) *Stein {
-	(&z.l).Set(&y.l)
-	(&z.r).Set(&y.r)
+// Set sets z equal to y, and returns z.
+func (z *Stein) Set(y *Stein) *Stein {
+	z.l.Set(&y.l)
+	z.r.Set(&y.r)
 	return z
 }
 
-// New returns a pointer to a Stein value made from two given pointers to
-// big.Int values.
+// New returns a pointer to the Stein value a+bω.
 func New(a, b *big.Int) *Stein {
 	z := new(Stein)
-	(&z.l).Set(a)
-	(&z.r).Set(b)
+	z.l.Set(a)
+	z.r.Set(b)
 	return z
 }
 
 // Scal sets z equal to y scaled by a, and returns z.
 func (z *Stein) Scal(y *Stein, a *big.Int) *Stein {
-	(&z.l).Mul(&y.l, a)
-	(&z.r).Mul(&y.r, a)
+	z.l.Mul(&y.l, a)
+	z.r.Mul(&y.r, a)
 	return z
 }
 
 // Neg sets z equal to the negative of y, and returns z.
 func (z *Stein) Neg(y *Stein) *Stein {
-	(&z.l).Neg(&y.l)
-	(&z.r).Neg(&y.r)
+	z.l.Neg(&y.l)
+	z.r.Neg(&y.r)
 	return z
 }
 
 // Conj sets z equal to the conjugate of y, and returns z.
 func (z *Stein) Conj(y *Stein) *Stein {
-	(&z.l).Sub(&y.l, &y.r)
-	(&z.r).Neg(&y.r)
+	z.l.Sub(&y.l, &y.r)
+	z.r.Neg(&y.r)
 	return z
 }
 
 // Add sets z equal to the sum of x and y, and returns z.
 func (z *Stein) Add(x, y *Stein) *Stein {
-	(&z.l).Add(&x.l, &y.l)
-	(&z.r).Add(&x.r, &y.r)
+	z.l.Add(&x.l, &y.l)
+	z.r.Add(&x.r, &y.r)
 	return z
 }
 
 // Sub sets z equal to the difference of x and y, and returns z.
 func (z *Stein) Sub(x, y *Stein) *Stein {
-	(&z.l).Sub(&x.l, &y.l)
-	(&z.r).Sub(&x.r, &y.r)
+	z.l.Sub(&x.l, &y.l)
+	z.r.Sub(&x.r, &y.r)
 	return z
 }
 
@@ -117,22 +116,25 @@ func (z *Stein) Mul(x, y *Stein) *Stein {
 	c := new(big.Int).Set(&y.l)
 	d := new(big.Int).Set(&y.r)
 	temp := new(big.Int)
-	(&z.l).Sub(
-		(&z.l).Mul(a, c),
+	z.l.Sub(
+		z.l.Mul(a, c),
 		temp.Mul(d, b),
 	)
-	(&z.r).Add(
-		(&z.r).Mul(d, a),
+	z.r.Add(
+		z.r.Mul(d, a),
 		temp.Mul(b, c),
 	)
-	(&z.r).Sub(
-		(&z.r),
+	z.r.Sub(
+		&z.r,
 		temp.Mul(b, d),
 	)
 	return z
 }
 
-// Quad returns the non-negative quadrance of z, a pointer to a big.Int value.
+// Quad returns the quadrance of z. If z = a+bω, then the
+// quadrance is
+// 		Mul(a, a) + Mul(b, b) - Mul(a, b)
+// This is always non-negative.
 func (z *Stein) Quad() *big.Int {
 	quad := new(big.Int)
 	temp := new(big.Int)
@@ -153,14 +155,14 @@ func (z *Stein) Quo(x, y *Stein) *Stein {
 	quad := y.Quad()
 	z.Conj(y)
 	z.Mul(x, z)
-	(&z.l).Quo(&z.l, quad)
-	(&z.r).Quo(&z.r, quad)
+	z.l.Quo(&z.l, quad)
+	z.r.Quo(&z.r, quad)
 	return z
 }
 
 // Associates returns the six associates of z.
 func (z *Stein) Associates() (a, b, c, d, e, f *Stein) {
-	a.Copy(z)
+	a.Set(z)
 	b.Neg(z)
 	unit := Omega()
 	c.Mul(z, unit)
